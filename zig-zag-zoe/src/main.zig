@@ -7,7 +7,7 @@ var seed: u64 = undefined;
 const rows: u8 = 5;
 const cols: u8 = 5;
 var play_O: u8 = undefined;
-var win_status: u8 = undefined;
+var win_status: i8 = undefined;
 
 pub fn main() !void {
 
@@ -24,29 +24,33 @@ pub fn main() !void {
             try print_board(game_board);
             try HUMAN_move(&game_board);
             if (!is_active(game_board)) {
+                win_status *= 1;
                 break;
             }
             try print_board(game_board);
             try CPU_move(&game_board);
             if (!is_active(game_board)) {
+                win_status *= -1;
                 break;
             }
             // CPU plays O
         } else if (play_O == 2) {
             try CPU_move(&game_board);
             if (!is_active(game_board)) {
+                win_status *= -1;
                 break;
             }
             try print_board(game_board);
             try HUMAN_move(&game_board);
             if (!is_active(game_board)) {
+                win_status *= 1;
                 break;
             }
             try print_board(game_board);
         }
     }
     try print_board(game_board);
-    try stdout.print("GAME OVER!\n", .{});
+    try end_game();
 }
 
 pub fn get_rand(a: u8, b: u8) !u8 {
@@ -69,7 +73,7 @@ pub fn is_active(board: [rows][cols]u8) bool {
     // checks for at least one empty cell for game to continue
     for (board, 0..) |r, r_idx| {
         for (r, 0..) |cell, c_idx| {
-            // can't have used vars/captures
+            // can't have unused vars/captures
             _ = r_idx;
             _ = c_idx;
             if (cell == 0) {
@@ -79,6 +83,7 @@ pub fn is_active(board: [rows][cols]u8) bool {
     }
 
     //try stdout.print("DRAW!\n", .{});
+    win_status = 0;
     return false;
 }
 
@@ -90,6 +95,7 @@ pub fn row_check(board: [rows][cols]u8) bool {
             if (c_idx < (cols - 2)) {
                 if (cell != 0) {
                     if (board[r_idx][c_idx] == board[r_idx][c_idx + 1] and board[r_idx][c_idx + 1] == board[r_idx][c_idx + 2]) {
+                        win_status = 1;
                         return true;
                     }
                 }
@@ -107,6 +113,7 @@ pub fn col_check(board: [rows][cols]u8) bool {
             if (r_idx < (rows - 2)) {
                 if (cell != 0) {
                     if (board[r_idx][c_idx] == board[r_idx + 1][c_idx] and board[r_idx + 1][c_idx] == board[r_idx + 2][c_idx]) {
+                        win_status = 1;
                         return true;
                     }
                 }
@@ -242,9 +249,9 @@ pub fn init_game() !void {
         if (play_O == 1 or play_O == 2) {
             break;
         } else if (play_O == 3) {
-            try stdout.print("Zig-Zag-Zoe is a two player game played on a 5x5 board.\n", .{});
+            try stdout.print("\nZig-Zag-Zoe is a two player game played on a 5x5 board.\n", .{});
             try stdout.print("Players take turns placing Zs and Os until 3-in-a-row/column/diagonal.\n", .{});
-            try stdout.print("If the board is full, the game ends in a draw.\n", .{});
+            try stdout.print("If the board is full, the game ends in a draw.\n\n", .{});
         } else if (play_O == 9) {
             try stdout.print("Thanks for playing! Come again!\n", .{});
             std.process.exit(0);
@@ -254,4 +261,17 @@ pub fn init_game() !void {
     }
 
     try stdout.print("\n", .{});
+}
+
+pub fn end_game() !void {
+    // Print game status. +1 for HUMAN, -1 for CPU, 0 for DRAW
+    try stdout.print("GAME OVER!\n", .{});
+
+    if (win_status > 0) {
+        try stdout.print("PLAYER WINS!\n", .{});
+    } else if (win_status < 0) {
+        try stdout.print("CPU WINS!\n", .{});
+    } else {
+        try stdout.print("DRAW!\n", .{});
+    }
 }
