@@ -4,14 +4,15 @@ const stdin = std.io.getStdIn().reader();
 
 // Some variables used elsewhere
 var seed: u64 = undefined;
-const rows: u8 = 3;
-const cols: u8 = 3;
+const rows: u8 = 5;
+const cols: u8 = 5;
 var play_O: u8 = undefined;
+var win_status: u8 = undefined;
 
 pub fn main() !void {
 
     // init board
-    var game_board = [rows][cols]u8{ [_]u8{ 0, 0, 0 }, [_]u8{ 0, 0, 0 }, [_]u8{ 0, 0, 0 } };
+    var game_board = [rows][cols]u8{ [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 } };
 
     // generate game menu
     try init_game();
@@ -60,6 +61,11 @@ pub fn get_rand(a: u8, b: u8) !u8 {
 }
 
 pub fn is_active(board: [rows][cols]u8) bool {
+    // checks for 3 in a row
+    if (row_check(board) or col_check(board) or diag_check(board)) {
+        return false;
+    }
+
     // checks for at least one empty cell for game to continue
     for (board, 0..) |r, r_idx| {
         for (r, 0..) |cell, c_idx| {
@@ -71,6 +77,48 @@ pub fn is_active(board: [rows][cols]u8) bool {
             }
         }
     }
+
+    //try stdout.print("DRAW!\n", .{});
+    return false;
+}
+
+pub fn row_check(board: [rows][cols]u8) bool {
+    // checks for at least one set of 3 values in a row
+    for (board, 0..) |r, r_idx| {
+        for (r, 0..) |cell, c_idx| {
+            // only go up to n-3
+            if (c_idx < (cols - 2)) {
+                if (cell != 0) {
+                    if (board[r_idx][c_idx] == board[r_idx][c_idx + 1] and board[r_idx][c_idx + 1] == board[r_idx][c_idx + 2]) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+pub fn col_check(board: [rows][cols]u8) bool {
+    // checks for at least one set of 3 values in a col
+    for (board, 0..) |r, r_idx| {
+        for (r, 0..) |cell, c_idx| {
+            // only go up to n-3
+            if (r_idx < (rows - 2)) {
+                if (cell != 0) {
+                    if (board[r_idx][c_idx] == board[r_idx + 1][c_idx] and board[r_idx + 1][c_idx] == board[r_idx + 2][c_idx]) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+pub fn diag_check(board: [rows][cols]u8) bool {
+    // TODO
+    _ = board;
     return false;
 }
 
@@ -179,9 +227,9 @@ pub fn get_user_input() !u8 {
 
 pub fn init_game() !void {
     // loop until user provides input to start game
-    try stdout.print("\t*************\t\n\n", .{});
-    try stdout.print("\t*ZIG-ZAG-ZOE*\t\n\n", .{});
-    try stdout.print("\t*************\t\n\n", .{});
+    try stdout.print("*************\t\n\n", .{});
+    try stdout.print("*ZIG-ZAG-ZOE*\t\n\n", .{});
+    try stdout.print("*************\t\n\n", .{});
 
     while (true) {
         try stdout.print("PLAY FIRST? (1/2)\n", .{});
@@ -193,10 +241,13 @@ pub fn init_game() !void {
 
         if (play_O == 1 or play_O == 2) {
             break;
+        } else if (play_O == 3) {
+            try stdout.print("Zig-Zag-Zoe is a two player game played on a 5x5 board.\n", .{});
+            try stdout.print("Players take turns placing Zs and Os until 3-in-a-row/column/diagonal.\n", .{});
+            try stdout.print("If the board is full, the game ends in a draw.\n", .{});
         } else if (play_O == 9) {
             try stdout.print("Thanks for playing! Come again!\n", .{});
             std.process.exit(0);
-            // Add exit function
         } else {
             try stdout.print("Invalid entry!\n\n", .{});
         }
