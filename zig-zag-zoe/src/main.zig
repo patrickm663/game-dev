@@ -7,48 +7,46 @@ var seed: u64 = undefined;
 const rows: u8 = 5;
 const cols: u8 = 5;
 var play_O: u8 = undefined;
-var win_status: i8 = undefined;
+var played_first: bool = false;
+var HUMAN_win_tally: u8 = 0;
+var CPU_win_tally: u8 = 0;
 
 pub fn main() !void {
 
     // init board
     var game_board = [rows][cols]u8{ [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 } };
 
-    // generate game menu
+    // generate game menu and initiate vars
     try init_game();
 
-    // game loop until grid is filled
+    // game loop until one cell remaining
     while (true) {
-        // HUMAN plays O
-        if (play_O == 1) {
+        if (play_O == 1 and !played_first) {
+            // HUMAN move first
             try print_board(game_board);
             try HUMAN_move(&game_board);
-            if (!is_active(game_board)) {
-                win_status *= 1;
-                break;
-            }
-            try print_board(game_board);
-            try CPU_move(&game_board);
-            if (!is_active(game_board)) {
-                win_status *= -1;
-                break;
-            }
-            // CPU plays O
-        } else if (play_O == 2) {
-            try CPU_move(&game_board);
-            if (!is_active(game_board)) {
-                win_status *= -1;
-                break;
-            }
-            try print_board(game_board);
-            try HUMAN_move(&game_board);
-            if (!is_active(game_board)) {
-                win_status *= 1;
-                break;
-            }
-            try print_board(game_board);
+            played_first = true;
+        }
+
+        // CPU move
+        try stdout.print("CPU WINS: {}\n\n", .{CPU_win_tally});
+        try print_board(game_board);
+        try CPU_move(&game_board);
+        CPU_win_tally = count_win(game_board, 1);
+        if (!is_active(game_board)) {
+            break;
+        }
+
+        // HUMAN move
+        try stdout.print("HUMAN WINS: {}\n\n", .{HUMAN_win_tally});
+        try print_board(game_board);
+        try HUMAN_move(&game_board);
+        HUMAN_win_tally = count_win(game_board, 2);
+        if (!is_active(game_board)) {
+            break;
         }
     }
+
     try print_board(game_board);
     try end_game();
 }
@@ -64,69 +62,100 @@ pub fn get_rand(a: u8, b: u8) !u8 {
     return target_num;
 }
 
-pub fn is_active(board: [rows][cols]u8) bool {
+pub fn count_win(board: [rows][cols]u8, play_num: u8) u8 {
     // checks for 3 in a row
-    if (row_check(board) or col_check(board) or diag_check(board)) {
-        return false;
-    }
+    return (row_check(board, play_num) + col_check(board, play_num) + diag_check(board, play_num));
+}
 
-    // checks for at least one empty cell for game to continue
+pub fn is_active(board: [rows][cols]u8) bool {
+    // checks for only one empty cell to end game
+    var count_zeros: u8 = 0;
+
     for (board, 0..) |r, r_idx| {
         for (r, 0..) |cell, c_idx| {
             // can't have unused vars/captures
             _ = r_idx;
             _ = c_idx;
             if (cell == 0) {
-                return true;
+                count_zeros += 1;
+                if (count_zeros > 1) {
+                    return true;
+                }
             }
         }
     }
 
-    //try stdout.print("DRAW!\n", .{});
-    win_status = 0;
     return false;
 }
 
-pub fn row_check(board: [rows][cols]u8) bool {
+pub fn row_check(board: [rows][cols]u8, play_num: u8) u8 {
     // checks for at least one set of 3 values in a row
+    var count_wins: u8 = 0;
     for (board, 0..) |r, r_idx| {
         for (r, 0..) |cell, c_idx| {
             // only go up to n-3
             if (c_idx < (cols - 2)) {
-                if (cell != 0) {
+                if (cell == play_num) {
                     if (board[r_idx][c_idx] == board[r_idx][c_idx + 1] and board[r_idx][c_idx + 1] == board[r_idx][c_idx + 2]) {
-                        win_status = 1;
-                        return true;
+                        count_wins += 1;
                     }
                 }
             }
         }
     }
-    return false;
+    return count_wins;
 }
 
-pub fn col_check(board: [rows][cols]u8) bool {
+pub fn col_check(board: [rows][cols]u8, play_num: u8) u8 {
     // checks for at least one set of 3 values in a col
+    var count_wins: u8 = 0;
     for (board, 0..) |r, r_idx| {
         for (r, 0..) |cell, c_idx| {
             // only go up to n-3
             if (r_idx < (rows - 2)) {
-                if (cell != 0) {
+                if (cell == play_num) {
                     if (board[r_idx][c_idx] == board[r_idx + 1][c_idx] and board[r_idx + 1][c_idx] == board[r_idx + 2][c_idx]) {
-                        win_status = 1;
-                        return true;
+                        count_wins += 1;
                     }
                 }
             }
         }
     }
-    return false;
+    return count_wins;
 }
 
-pub fn diag_check(board: [rows][cols]u8) bool {
-    // TODO
-    _ = board;
-    return false;
+pub fn diag_check(board: [rows][cols]u8, play_num: u8) u8 {
+    // check all diagonals
+    var count_wins: u8 = 0;
+    // y=x diagonal
+    for (board, 0..) |r, r_idx| {
+        for (r, 0..) |cell, c_idx| {
+            // only check between 2 to rows and 2 to cols
+            if (r_idx > 1 and c_idx > 1) {
+                if (cell == play_num) {
+                    if (board[r_idx][c_idx] == board[r_idx - 1][c_idx - 1] and board[r_idx - 1][c_idx - 1] == board[r_idx - 2][c_idx - 2]) {
+                        count_wins += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    // y=-x diagonal
+    for (board, 0..) |r, r_idx| {
+        for (r, 0..) |cell, c_idx| {
+            // only check between 2 to rows and 2 to cols
+            if (r_idx < (rows - 2) and c_idx > 1) {
+                if (cell == play_num) {
+                    if (board[r_idx][c_idx] == board[r_idx + 1][c_idx - 1] and board[r_idx + 1][c_idx - 1] == board[r_idx + 2][c_idx - 2]) {
+                        count_wins += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    return count_wins;
 }
 
 pub fn print_board(board: [rows][cols]u8) !void {
@@ -249,9 +278,10 @@ pub fn init_game() !void {
         if (play_O == 1 or play_O == 2) {
             break;
         } else if (play_O == 3) {
-            try stdout.print("\nZig-Zag-Zoe is a two player game played on a 5x5 board.\n", .{});
-            try stdout.print("Players take turns placing Zs and Os until 3-in-a-row/column/diagonal.\n", .{});
-            try stdout.print("If the board is full, the game ends in a draw.\n\n", .{});
+            try stdout.print("\n* Zig-Zag-Zoe is a two player game played on a 5x5 board.\n", .{});
+            try stdout.print("* Players take turns placing Zs and Os, scoring a point for each 3-in-a-row/column/diagonal.\n", .{});
+            try stdout.print("* Play continues until only 1 cell remains.\n", .{});
+            try stdout.print("* The player with the most points at the end of the game wins.\n\n", .{});
         } else if (play_O == 9) {
             try stdout.print("Thanks for playing! Come again!\n", .{});
             std.process.exit(0);
@@ -264,12 +294,13 @@ pub fn init_game() !void {
 }
 
 pub fn end_game() !void {
-    // Print game status. +1 for HUMAN, -1 for CPU, 0 for DRAW
+    // Print game score and win statys
     try stdout.print("GAME OVER!\n", .{});
+    try stdout.print("{} - {}\n", .{ HUMAN_win_tally, CPU_win_tally });
 
-    if (win_status > 0) {
+    if (HUMAN_win_tally > CPU_win_tally) {
         try stdout.print("PLAYER WINS!\n", .{});
-    } else if (win_status < 0) {
+    } else if (HUMAN_win_tally < CPU_win_tally) {
         try stdout.print("CPU WINS!\n", .{});
     } else {
         try stdout.print("DRAW!\n", .{});
