@@ -1,7 +1,8 @@
 # Zig-Zag-Zoe
-A simple clone of Tic-Tac-Toe, written in Zig.
+A simple 5x5 version of Tic-Tac-Toe, written in Zig.
 
-**WIP: Win conditions have to be written**
+Players take turns playing Zs and Os, attempting to get 3-in-a-row. Play continues until one square remains. The player with the most 3-in-a-rows at the end wins. 
+
 
 ## Usage
 With Zig installed, run the following from the CLI:
