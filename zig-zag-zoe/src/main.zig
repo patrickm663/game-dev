@@ -30,8 +30,8 @@ pub fn main() !void {
 
         // CPU move
         try stdout.print("CPU WINS: {}\n\n", .{CPU_win_tally});
-        try print_board(game_board);
         try CPU_move(&game_board);
+        try print_board(game_board);
         CPU_win_tally = count_win(game_board, 1);
         if (!is_active(game_board)) {
             break;
