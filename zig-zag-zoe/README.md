@@ -1,7 +1,5 @@
 # Zig-Zag-Zoe
 
-**NOTE: currently having issues compiling this on Windows :/**
-
 **A Docker version and pre-build binaries are coming soon!**
 
 A simple 5x5 version of Tic-Tac-Toe, written in Zig.
