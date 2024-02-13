@@ -23,13 +23,15 @@ pub fn main() !void {
     while (true) {
         if (play_O == 1 and !played_first) {
             // HUMAN move first
+            try stdout.print("HUMAN SCORE: {}\n\n", .{HUMAN_win_tally});
+            try stdout.print("CPU SCORE: {}\n\n", .{CPU_win_tally});
             try print_board(game_board);
             try HUMAN_move(&game_board);
             played_first = true;
         }
 
         // CPU move
-        try stdout.print("CPU WINS: {}\n\n", .{CPU_win_tally});
+        try clear_screen();
         try CPU_move(&game_board);
         try print_board(game_board);
         CPU_win_tally = count_win(game_board, 1);
@@ -38,7 +40,9 @@ pub fn main() !void {
         }
 
         // HUMAN move
-        try stdout.print("HUMAN WINS: {}\n\n", .{HUMAN_win_tally});
+        try clear_screen();
+        try stdout.print("HUMAN SCORE: {}\n\n", .{HUMAN_win_tally});
+        try stdout.print("CPU SCORE: {}\n\n", .{CPU_win_tally});
         try print_board(game_board);
         try HUMAN_move(&game_board);
         HUMAN_win_tally = count_win(game_board, 2);
@@ -47,6 +51,7 @@ pub fn main() !void {
         }
     }
 
+    try clear_screen();
     try print_board(game_board);
     try end_game();
 }
@@ -215,10 +220,10 @@ pub fn HUMAN_move(board: *[rows][cols]u8) !void {
 
     while (true) {
         try stdout.print("Enter row number:\n", .{});
-        var HUMAN_move_x: u8 = try get_user_input();
+        var HUMAN_move_x: u8 = get_user_input() catch unreachable;
 
         try stdout.print("Enter column number:\n", .{});
-        var HUMAN_move_y: u8 = try get_user_input();
+        var HUMAN_move_y: u8 = get_user_input() catch unreachable;
 
         var HUMAN_move_: u8 = 2;
 
@@ -263,6 +268,7 @@ pub fn get_user_input() !u8 {
 
 pub fn init_game() !void {
     // loop until user provides input to start game
+    try clear_screen();
     try stdout.print("*************\t\n\n", .{});
     try stdout.print("*ZIG-ZAG-ZOE*\t\n\n", .{});
     try stdout.print("*************\t\n\n", .{});
@@ -273,9 +279,10 @@ pub fn init_game() !void {
         try stdout.print("2. No\n", .{});
         try stdout.print("3. Help\n", .{});
         try stdout.print("9. Quit Game\n", .{});
-        play_O = try get_user_input();
+        play_O = get_user_input() catch unreachable;
 
         if (play_O == 1 or play_O == 2) {
+            try clear_screen();
             break;
         } else if (play_O == 3) {
             try stdout.print("\n* Zig-Zag-Zoe is a two player game played on a 5x5 board.\n", .{});
@@ -305,4 +312,10 @@ pub fn end_game() !void {
     } else {
         try stdout.print("DRAW!\n", .{});
     }
+}
+
+pub fn clear_screen() !void {
+    // Clear screen and place cursor at top left
+    // Source: https://ziggit.dev/t/how-to-clear-terminal/88/1
+    try stdout.print("\x1B[2J\x1B[H", .{});
 }
