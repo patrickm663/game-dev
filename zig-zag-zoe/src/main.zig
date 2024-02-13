@@ -202,9 +202,9 @@ pub fn CPU_move(board: *[rows][cols]u8) !void {
     try stdout.print("CPU MOVE\n", .{});
 
     while (true) {
-        var CPU_move_x: u8 = try get_rand(0, rows - 1);
-        var CPU_move_y: u8 = try get_rand(0, cols - 1);
-        var CPU_move_: u8 = 1;
+        const CPU_move_x: u8 = try get_rand(0, rows - 1);
+        const CPU_move_y: u8 = try get_rand(0, cols - 1);
+        const CPU_move_: u8 = 1;
 
         if (is_valid(board, CPU_move_x, CPU_move_y)) {
             board[CPU_move_x][CPU_move_y] = CPU_move_;
@@ -228,12 +228,12 @@ pub fn HUMAN_move(board: *[rows][cols]u8) !void {
 
     while (true) {
         try stdout.print("Enter row number:\n", .{});
-        var HUMAN_move_x: u8 = get_user_input() catch unreachable;
+        const HUMAN_move_x: u8 = get_user_input() catch unreachable;
 
         try stdout.print("Enter column number:\n", .{});
-        var HUMAN_move_y: u8 = get_user_input() catch unreachable;
+        const HUMAN_move_y: u8 = get_user_input() catch unreachable;
 
-        var HUMAN_move_: u8 = 2;
+        const HUMAN_move_: u8 = 2;
 
         if (is_valid(board, HUMAN_move_x, HUMAN_move_y) and HUMAN_move_ >= 1 and HUMAN_move_ <= (rows * cols)) {
             board[HUMAN_move_x][HUMAN_move_y] = HUMAN_move_;
