@@ -1,6 +1,12 @@
+// Author: Patrick Moehrke
+// License: MIT
+// Feel free to copy/paste anything you find below!
+
 const std = @import("std");
-const stdout = std.io.getStdOut().writer();
-const stdin = std.io.getStdIn().reader();
+
+// can't declare these as global constants on Windows
+var stdout: std.fs.File.Writer = undefined;
+var stdin: std.fs.File.Reader = undefined;
 
 // Some variables used elsewhere
 var seed: u64 = undefined;
@@ -12,6 +18,8 @@ var HUMAN_win_tally: u8 = 0;
 var CPU_win_tally: u8 = 0;
 
 pub fn main() !void {
+    stdout = std.io.getStdOut().writer();
+    stdin = std.io.getStdIn().reader();
 
     // init board
     var game_board = [rows][cols]u8{ [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0 } };
