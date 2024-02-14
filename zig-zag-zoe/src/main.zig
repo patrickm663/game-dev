@@ -282,7 +282,7 @@ pub fn init_game() !void {
     try stdout.print("*************\t\n\n", .{});
 
     while (true) {
-        try stdout.print("PLAY FIRST? (1/2)\n", .{});
+        try stdout.print("PLAY FIRST? [1/2]\n", .{});
         try stdout.print("1. Yes\n", .{});
         try stdout.print("2. No\n", .{});
         try stdout.print("3. Help\n", .{});
