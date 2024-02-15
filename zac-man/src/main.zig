@@ -4,15 +4,6 @@
 
 const std = @import("std");
 
-// Source: https://www.reddit.com/r/Zig/comments/j77jgs/comment/g83cm4c/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-const c = @cImport({
-    @cInclude("termios.h");
-    @cInclude("unistd.h");
-    @cInclude("stdlib.h");
-});
-
-var orig_termios: c.termios = undefined;
-
 // can't declare these as global constants on Windows
 var stdout: std.fs.File.Writer = undefined;
 var stdin: std.fs.File.Reader = undefined;
@@ -28,63 +19,72 @@ pub fn main() !void {
     stdout = std.io.getStdOut().writer();
     stdin = std.io.getStdIn().reader();
 
-    enableRawMode();
-
     // init board
     var game_screen = [grid_X][grid_Y]u8{ [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
-    game_screen[3][3] = apple;
+    game_screen[4][5] = apple;
 
-    var pre_x_pos: u16 = 0;
-    var pre_y_pos: u16 = 0;
+    var score: u16 = 0;
+
+    var pre_x_pos: u16 = 1;
+    var pre_y_pos: u16 = 1;
     game_screen[pre_x_pos][pre_y_pos] = snake;
 
     var x_pos: u16 = 0;
     var y_pos: u16 = 0;
-    var x_pos_: i16 = 0;
-    var y_pos_: i16 = 0;
+    var x_pos_: i16 = 1;
+    var y_pos_: i16 = 1;
+    var r_apl_x: u16 = 0;
+    var r_apl_y: u16 = 0;
     var x_dt: i16 = 0;
     var y_dt: i16 = 0;
     var dir: i16 = 1;
-    var user_move = [2]i16{ 0, 0 };
-
-    var i: u64 = 0;
+    var user_move = [2]i16{ x_pos_, y_pos_ };
 
     try clear_screen();
 
-    while (i < 25) {
+    while (true) {
+        try clear_screen();
         try print_board(game_screen);
-        try stdout.print("Iteration: {}\n\n", .{i});
+        try stdout.print("Score: {}\n\n", .{score});
         user_move = try get_user_input();
         x_dt = user_move[0] * dir;
         y_dt = user_move[1] * dir;
         x_pos_ += x_dt;
         y_pos_ += y_dt;
+        // check for boundaries
         if (is_valid(x_pos_, y_pos_)) {
             try clear_screen();
             x_pos = @as(u16, @intCast(x_pos_));
             y_pos = @as(u16, @intCast(y_pos_));
+            // If the apple gets eaten, place it somewhere else
+            if (game_screen[x_pos][y_pos] == apple) {
+                while (true) {
+                    r_apl_x = @as(u16, @intCast(try get_rand(1, grid_X - 2)));
+                    r_apl_y = @as(u16, @intCast(try get_rand(1, grid_Y - 2)));
+                    if (r_apl_x != x_pos or r_apl_y != y_pos) {
+                        game_screen[r_apl_x][r_apl_y] = apple;
+                        break;
+                    }
+                }
+                score += 1;
+            }
             game_screen[pre_x_pos][pre_y_pos] = 0;
             game_screen[x_pos][y_pos] = snake;
             pre_x_pos = x_pos;
             pre_y_pos = y_pos;
-            i += 1;
 
-            //try print_board(game_screen);
-            //_ = try get_user_input();
-            //std.time.sleep(500000000);
-
-        //} //else {
-          //  x_pos_ -= x_dt;
-          //  y_pos_ -= y_dt;
-          //  dir *= -1;
-
-            //try clear_screen();
+            // reverse previous move if boundary reached
+        } else {
+            x_pos_ -= x_dt;
+            y_pos_ -= y_dt;
         }
+        //  dir *= -1;
+
         try clear_screen();
     }
     try print_board(game_screen);
-    try stdout.print("Iteration: {}\n\n", .{i});
+    try stdout.print("Score: {}\n\n", .{score});
 }
 
 pub fn is_valid(x_pos: i16, y_pos: i16) bool {
@@ -134,49 +134,28 @@ pub fn get_user_input() ![2]i16 {
     // 0 = y dir (rows); 1 = x dir (cols)
     var user_input: u8 = undefined;
     var output = [2]i16{ 0, 0 };
-    while (true) {
-        user_input = try stdin.readByte();
-        //const user_input = std.mem.trim(u8, bare_line, "\r");
+    user_input = try stdin.readByte();
 
-            // up
-        if (user_input == 'w') {
-            output[0] = -1;
-            output[1] = 0;
-            break;
-            // down
-        //} else if (std.mem.eql(u8, user_input, "s")) {
-        } else if (user_input == 's') {
-            output[0] = 1;
-            output[1] = 0;
-            break;
-            // right
-        } else if (user_input == 'd') {
-            output[0] = 0;
-            output[1] = 1;
-            break;
-            // left
-        } else if (user_input == 'a') {
-            output[0] = 0;
-            output[1] = -1;
-            break;
-        } else {
-            continue;
-        }
+    // up
+    if (user_input == 'w') {
+        output[0] = -1;
+        output[1] = 0;
+        // down
+    } else if (user_input == 's') {
+        output[0] = 1;
+        output[1] = 0;
+        // right
+    } else if (user_input == 'd') {
+        output[0] = 0;
+        output[1] = 1;
+        // left
+    } else if (user_input == 'a') {
+        output[0] = 0;
+        output[1] = -1;
+        // quit
+    } else if (user_input == 'q') {
+        std.process.exit(1);
     }
+
     return output;
-}
-
-// Source: https://www.reddit.com/r/Zig/comments/j77jgs/comment/g83cm4c/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-pub fn enableRawMode() void {
-    _ = c.tcgetattr(c.STDIN_FILENO, &orig_termios);
-    _ = c.atexit(disableRawMode);
-
-    var raw: c.termios = undefined;
-    raw.c_lflag &= ~(@as(u8, c.ECHO) | @as(u8, c.ICANON));
-
-    _ = c.tcsetattr(c.STDIN_FILENO, c.TCSAFLUSH, &raw);
-}
-
-pub fn disableRawMode() callconv(.C) void {
-    _ = c.tcsetattr(c.STDIN_FILENO, c.TCSAFLUSH, &orig_termios);
 }
