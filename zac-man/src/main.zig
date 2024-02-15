@@ -62,10 +62,10 @@ pub fn main() !void {
             //_ = try get_user_input();
             //std.time.sleep(500000000);
 
-        } else {
-            x_pos_ -= x_dt;
-            y_pos_ -= y_dt;
-            dir *= -1;
+        //} //else {
+          //  x_pos_ -= x_dt;
+          //  y_pos_ -= y_dt;
+          //  dir *= -1;
 
             //try clear_screen();
         }
