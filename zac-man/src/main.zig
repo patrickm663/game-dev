@@ -4,6 +4,15 @@
 
 const std = @import("std");
 
+// Source: https://www.reddit.com/r/Zig/comments/j77jgs/comment/g83cm4c/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+const c = @cImport({
+    @cInclude("termios.h");
+    @cInclude("unistd.h");
+    @cInclude("stdlib.h");
+});
+
+var orig_termios: c.termios = undefined;
+
 // can't declare these as global constants on Windows
 var stdout: std.fs.File.Writer = undefined;
 var stdin: std.fs.File.Reader = undefined;
@@ -18,6 +27,8 @@ const apple: u8 = 2;
 pub fn main() !void {
     stdout = std.io.getStdOut().writer();
     stdin = std.io.getStdIn().reader();
+
+    enableRawMode();
 
     // init board
     var game_screen = [grid_X][grid_Y]u8{ [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
@@ -50,6 +61,7 @@ pub fn main() !void {
         x_pos_ += x_dt;
         y_pos_ += y_dt;
         if (is_valid(x_pos_, y_pos_)) {
+            try clear_screen();
             x_pos = @as(u16, @intCast(x_pos_));
             y_pos = @as(u16, @intCast(y_pos_));
             game_screen[pre_x_pos][pre_y_pos] = 0;
@@ -58,7 +70,7 @@ pub fn main() !void {
             pre_y_pos = y_pos;
             i += 1;
 
-            try print_board(game_screen);
+            //try print_board(game_screen);
             //_ = try get_user_input();
             //std.time.sleep(500000000);
 
@@ -120,33 +132,30 @@ pub fn print_board(board: [grid_X][grid_Y]u8) !void {
 pub fn get_user_input() ![2]i16 {
     // helper for parsing user input
     // 0 = y dir (rows); 1 = x dir (cols)
+    var user_input: u8 = undefined;
     var output = [2]i16{ 0, 0 };
     while (true) {
-        const bare_line = try stdin.readUntilDelimiterAlloc(
-            std.heap.page_allocator,
-            '\n',
-            8192,
-        );
-        defer std.heap.page_allocator.free(bare_line);
-        const user_input = std.mem.trim(u8, bare_line, "\r");
+        user_input = try stdin.readByte();
+        //const user_input = std.mem.trim(u8, bare_line, "\r");
 
-        // up
-        if (std.mem.eql(u8, user_input, "w")) {
+            // up
+        if (user_input == 'w') {
             output[0] = -1;
             output[1] = 0;
             break;
             // down
-        } else if (std.mem.eql(u8, user_input, "s")) {
+        //} else if (std.mem.eql(u8, user_input, "s")) {
+        } else if (user_input == 's') {
             output[0] = 1;
             output[1] = 0;
             break;
             // right
-        } else if (std.mem.eql(u8, user_input, "d")) {
+        } else if (user_input == 'd') {
             output[0] = 0;
             output[1] = 1;
             break;
             // left
-        } else if (std.mem.eql(u8, user_input, "a")) {
+        } else if (user_input == 'a') {
             output[0] = 0;
             output[1] = -1;
             break;
@@ -155,4 +164,19 @@ pub fn get_user_input() ![2]i16 {
         }
     }
     return output;
+}
+
+// Source: https://www.reddit.com/r/Zig/comments/j77jgs/comment/g83cm4c/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+pub fn enableRawMode() void {
+    _ = c.tcgetattr(c.STDIN_FILENO, &orig_termios);
+    _ = c.atexit(disableRawMode);
+
+    var raw: c.termios = undefined;
+    raw.c_lflag &= ~(@as(u8, c.ECHO) | @as(u8, c.ICANON));
+
+    _ = c.tcsetattr(c.STDIN_FILENO, c.TCSAFLUSH, &raw);
+}
+
+pub fn disableRawMode() callconv(.C) void {
+    _ = c.tcsetattr(c.STDIN_FILENO, c.TCSAFLUSH, &orig_termios);
 }
